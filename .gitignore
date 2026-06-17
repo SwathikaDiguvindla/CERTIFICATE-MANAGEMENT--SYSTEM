@@ -10,3 +10,5 @@ __pycache__/
 
 # Database
 *.sqlite3
+# Environment variables
+backend/.env
