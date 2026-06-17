@@ -1,5 +1,8 @@
 from django.shortcuts import render, redirect
+from .models import Certificate
+from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
@@ -53,7 +56,9 @@ def logout_view(request):
 # ── dashboard ─────────────────────────────────────────────
 @login_required(login_url='/login/')
 def dashboard_view(request):
-    return render(request, 'authentication/dashboard.html')
+    return render(request, 'authentication/dashboard.html', {
+        'messages': messages.get_messages(request)
+    })
 
 # ── forgot password ───────────────────────────────────────
 def forgot_password_view(request):
@@ -121,3 +126,46 @@ def reset_password_view(request, uidb64, token):
         'uidb64': uidb64,
         'token': token
     })
+# ── generate certificate ────────────────────────────────
+@login_required(login_url='/login/')
+def generate_certificate_view(request):
+    if request.method == "POST":
+
+        name = request.POST.get("name")
+        phone = request.POST.get("phone")
+        email = request.POST.get("email")
+        domain = request.POST.get("domain")
+        start_date = request.POST.get("start_date")
+        end_date = request.POST.get("end_date")
+
+        last_certificate = Certificate.objects.order_by('-id').first()
+
+        if last_certificate:
+            match = re.search(r'\d+', last_certificate.certificate_id)
+
+            if match:
+                last_number = int(match.group())
+            else:
+                last_number = 0
+
+            new_number = last_number + 1
+        else:
+            new_number = 1
+
+        certificate_id = f"P{new_number:03d}"
+
+        certificate = Certificate.objects.create(
+            certificate_id=certificate_id,
+            name=name,
+            phone=phone,
+            email=email,
+            domain=domain,
+            start_date=start_date,
+            end_date=end_date,
+            created_at=timezone.now()
+        )
+
+        messages.success(request, f"Certificate {certificate_id} generated successfully!")
+        return redirect("/dashboard/")
+
+    return render(request, "authentication/generate_certificate.html")
