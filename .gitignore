@@ -1,0 +1,12 @@
+# Secret settings
+backend/certificate_portal/settings.py
+
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database
+*.sqlite3
