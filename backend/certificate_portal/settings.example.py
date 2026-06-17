@@ -1,7 +1,9 @@
 # Copy this file to settings.py and fill in your credentials
 # cp settings.example.py settings.py
+from pathlib import Path
 
-SECRET_KEY = 'your-secret-key-here'
+BASE_DIR = Path(__file__).resolve().parent.parent
+SECRET_KEY = "" #secret code
 DEBUG = True
 ALLOWED_HOSTS = []
 
@@ -59,5 +61,5 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ''        # ← your Gmail here
+EMAIL_HOST_USER = ''       # ← your Gmail here
 EMAIL_HOST_PASSWORD = ''    # ← your App Password here
