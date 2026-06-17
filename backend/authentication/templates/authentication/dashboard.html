@@ -224,7 +224,73 @@
     <div class="card">
 
       <div class="card-title">
-        Quick Actions
+        Generated Certificates
+</h3>
+
+
+<table border="1" width="100%" cellpadding="10">
+
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Email</th>
+<th>Domain</th>
+<th>Download</th>
+</tr>
+
+
+{% for certificate in certificates %}
+
+<tr>
+
+<td>
+{{certificate.certificate_id}}
+</td>
+
+<td>
+{{certificate.name}}
+</td>
+
+<td>
+{{certificate.email}}
+</td>
+
+<td>
+{{certificate.domain}}
+</td>
+
+
+<td>
+
+<a href="{% url 'download_certificate' certificate.certificate_id %}">
+
+<button class="btn">
+Download PDF
+</button>
+
+</a>
+
+</td>
+
+
+</tr>
+
+
+{% empty %}
+
+<tr>
+<td colspan="5">
+No certificates generated yet
+</td>
+</tr>
+
+{% endfor %}
+
+
+</table>
+
+
+</div>
       </div>
 
 

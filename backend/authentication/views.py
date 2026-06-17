@@ -9,6 +9,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
+from .utils import generate_certificate_pdf
 from django.conf import settings
 import re
 
@@ -56,10 +57,16 @@ def logout_view(request):
 # ── dashboard ─────────────────────────────────────────────
 @login_required(login_url='/login/')
 def dashboard_view(request):
-    return render(request, 'authentication/dashboard.html', {
-        'messages': messages.get_messages(request)
-    })
 
+    certificates = Certificate.objects.all().order_by('-id')
+
+    return render(
+        request,
+        'authentication/dashboard.html',
+        {
+            'certificates': certificates
+        }
+    )
 # ── forgot password ───────────────────────────────────────
 def forgot_password_view(request):
     message = None
@@ -129,6 +136,7 @@ def reset_password_view(request, uidb64, token):
 # ── generate certificate ────────────────────────────────
 @login_required(login_url='/login/')
 def generate_certificate_view(request):
+
     if request.method == "POST":
 
         name = request.POST.get("name")
@@ -137,6 +145,7 @@ def generate_certificate_view(request):
         domain = request.POST.get("domain")
         start_date = request.POST.get("start_date")
         end_date = request.POST.get("end_date")
+
 
         last_certificate = Certificate.objects.order_by('-id').first()
 
@@ -149,10 +158,13 @@ def generate_certificate_view(request):
                 last_number = 0
 
             new_number = last_number + 1
+
         else:
             new_number = 1
 
-        certificate_id = f"P{new_number:03d}"
+
+        certificate_id = f"CERT2026{new_number:04d}"
+
 
         certificate = Certificate.objects.create(
             certificate_id=certificate_id,
@@ -161,11 +173,49 @@ def generate_certificate_view(request):
             email=email,
             domain=domain,
             start_date=start_date,
-            end_date=end_date,
-            created_at=timezone.now()
+            end_date=end_date
         )
 
-        messages.success(request, f"Certificate {certificate_id} generated successfully!")
-        return redirect("/dashboard/")
 
-    return render(request, "authentication/generate_certificate.html")
+        # Generate PDF
+        pdf_path = generate_certificate_pdf(certificate)
+
+
+        certificate.pdf_file = pdf_path
+        certificate.save()
+
+
+        messages.success(
+            request,
+            f"Certificate {certificate_id} generated successfully!"
+        )
+
+
+        return redirect('/dashboard/')
+
+
+    # VERY IMPORTANT FOR GET REQUEST
+    return render(
+        request,
+        "authentication/generate_certificate.html"
+    )
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+
+
+@login_required(login_url='/login/')
+def download_certificate(request, certificate_id):
+
+    certificate = get_object_or_404(
+        Certificate,
+        certificate_id=certificate_id
+    )
+
+    if certificate.pdf_file:
+        return FileResponse(
+            certificate.pdf_file.open('rb'),
+            as_attachment=True,
+            filename=f"{certificate.certificate_id}.pdf"
+        )
+
+    return redirect('/dashboard/')
