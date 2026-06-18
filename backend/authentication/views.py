@@ -12,6 +12,7 @@ from django.utils.encoding import force_bytes, force_str
 from .utils import generate_certificate_pdf
 from django.conf import settings
 import re
+from django.http import FileResponse
 
 # ── helpers ──────────────────────────────────────────────
 def is_strong_password(password):
@@ -64,7 +65,8 @@ def dashboard_view(request):
         request,
         'authentication/dashboard.html',
         {
-            'certificates': certificates
+            'certificates': certificates,
+            'total_certificates': certificates.count()
         }
     )
 # ── forgot password ───────────────────────────────────────
@@ -179,11 +181,11 @@ def generate_certificate_view(request):
 
         # Generate PDF
         pdf_path = generate_certificate_pdf(certificate)
-
-
-        certificate.pdf_file = pdf_path
+        certificate.pdf_file = pdf_path.replace(
+    str(settings.MEDIA_ROOT) + "\\",
+    ""
+    )
         certificate.save()
-
 
         messages.success(
             request,

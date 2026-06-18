@@ -19,4 +19,9 @@ urlpatterns = [
     views.download_certificate,
     name='download_certificate'
 ),
+path(
+    'download/<str:certificate_id>/',
+    views.download_certificate,
+    name='download_certificate'
+),
 ]

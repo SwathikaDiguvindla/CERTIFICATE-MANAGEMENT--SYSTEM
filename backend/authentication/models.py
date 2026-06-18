@@ -36,11 +36,11 @@ class Certificate(models.Model):
 
 
     # QR code image (for Member 3 integration)
-    qr_code = models.ImageField(
-        upload_to='qr_codes/',
-        blank=True,
-        null=True
-    )
+    qr_code = models.CharField(
+    max_length=255,
+    blank=True,
+    null=True
+)
 
 
     created_at = models.DateTimeField(

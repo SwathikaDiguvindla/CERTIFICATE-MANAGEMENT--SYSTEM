@@ -1,114 +1,185 @@
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.colors import HexColor, black, white
-from reportlab.lib.utils import ImageReader
-from django.conf import settings
 import os
+import qrcode
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.colors import HexColor, black
+from reportlab.lib.units import inch
+
+from django.conf import settings
 
 
 def generate_certificate_pdf(certificate):
 
-    folder = os.path.join(settings.MEDIA_ROOT, "certificates")
-
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-
-    file_path = os.path.join(
-        folder,
-        f"{certificate.certificate_id}.pdf"
+    # Create folders
+    certificate_folder = os.path.join(
+        settings.MEDIA_ROOT,
+        "certificates"
     )
 
+    qr_folder = os.path.join(
+        settings.MEDIA_ROOT,
+        "qr_codes"
+    )
+
+    os.makedirs(certificate_folder, exist_ok=True)
+    os.makedirs(qr_folder, exist_ok=True)
+
+
+    # PDF path
+    pdf_filename = f"{certificate.certificate_id}.pdf"
+
+    pdf_path = os.path.join(
+        certificate_folder,
+        pdf_filename
+    )
+
+
+    # ---------------- QR CODE ----------------
+
+    qr_data = (
+        f"http://127.0.0.1:8000/verify/"
+        f"{certificate.certificate_id}"
+    )
+
+
+    qr = qrcode.make(qr_data)
+
+    qr_path = os.path.join(
+        qr_folder,
+        f"{certificate.certificate_id}.png"
+    )
+
+    qr.save(qr_path)
+
+
+    # Save QR path in database
+    certificate.qr_code = qr_path
+
+
+    # ---------------- PDF DESIGN ----------------
 
     c = canvas.Canvas(
-        file_path,
-        pagesize=landscape(A4)
+        pdf_path,
+        pagesize=A4
     )
 
 
-    width, height = landscape(A4)
+    width, height = A4
 
 
-    # Background
-    c.setFillColor(HexColor("#EAF6FF"))
-    c.rect(0, 0, width, height, fill=1)
+    # Border
+    c.setStrokeColor(
+        HexColor("#1a3a5c")
+    )
 
+    c.setLineWidth(5)
 
-    # Outer border
-    c.setStrokeColor(HexColor("#1A3A5C"))
-    c.setLineWidth(8)
-    c.rect(25, 25, width-50, height-50)
+    c.rect(
+        40,
+        40,
+        width-80,
+        height-80
+    )
 
 
     # Title
-    c.setFillColor(HexColor("#1A3A5C"))
-    c.setFont("Helvetica-Bold", 35)
+    c.setFillColor(
+        HexColor("#1a3a5c")
+    )
+
+    c.setFont(
+        "Helvetica-Bold",
+        28
+    )
 
     c.drawCentredString(
         width/2,
-        height-100,
+        height-120,
         "CERTIFICATE OF COMPLETION"
     )
 
 
     # Subtitle
+
     c.setFillColor(black)
-    c.setFont("Helvetica-Bold", 18)
+
+    c.setFont(
+        "Helvetica",
+        16
+    )
 
     c.drawCentredString(
         width/2,
-        height-150,
+        height-170,
         "This certificate is proudly presented to"
     )
 
 
-    # Student name
-    c.setFillColor(HexColor("#D35400"))
-    c.setFont("Helvetica-Bold", 32)
+    # Student Name
+
+    c.setFont(
+        "Helvetica-Bold",
+        24
+    )
 
     c.drawCentredString(
         width/2,
-        height-210,
-        certificate.name.upper()
+        height-230,
+        certificate.name
     )
 
 
     # Details
-    c.setFillColor(black)
-    c.setFont("Helvetica-Bold", 16)
+
+    c.setFont(
+        "Helvetica",
+        14
+    )
 
 
     c.drawCentredString(
         width/2,
-        height-270,
+        height-290,
         f"Domain : {certificate.domain}"
     )
 
 
     c.drawCentredString(
         width/2,
-        height-310,
+        height-320,
         f"Duration : {certificate.start_date} to {certificate.end_date}"
     )
 
 
-    # Certificate ID
-    c.setFillColor(HexColor("#1A3A5C"))
-    c.setFont("Helvetica-Bold", 14)
-
-    c.drawString(
-        80,
-        80,
+    c.drawCentredString(
+        width/2,
+        height-350,
         f"Certificate ID : {certificate.certificate_id}"
     )
 
 
+    # QR IMAGE
+
+    c.drawImage(
+        qr_path,
+        width-170,
+        80,
+        100,
+        100
+    )
+
+
     # Footer
-    c.setFillColor(black)
-    c.setFont("Helvetica-Bold", 12)
+
+    c.setFont(
+        "Helvetica-Oblique",
+        12
+    )
 
     c.drawCentredString(
         width/2,
-        60,
+        80,
         "CV Portal Certificate Management System"
     )
 
@@ -116,4 +187,4 @@ def generate_certificate_pdf(certificate):
     c.save()
 
 
-    return file_path
+    return pdf_path
