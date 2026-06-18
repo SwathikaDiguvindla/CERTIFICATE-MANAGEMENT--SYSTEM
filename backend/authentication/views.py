@@ -148,25 +148,27 @@ def generate_certificate_view(request):
         start_date = request.POST.get("start_date")
         end_date = request.POST.get("end_date")
 
+        # Generate next certificate ID
 
-        last_certificate = Certificate.objects.order_by('-id').first()
+        last_number = 0
 
-        if last_certificate:
-            match = re.search(r'\d+', last_certificate.certificate_id)
+        certificates = Certificate.objects.filter(
+            certificate_id__startswith="CERT2026"
+        )
 
-            if match:
-                last_number = int(match.group())
-            else:
-                last_number = 0
+        for cert in certificates:
+            try:
+                number = int(cert.certificate_id[-4:])
+                if number > last_number:
+                    last_number = number
+            except ValueError:
+                pass
 
-            new_number = last_number + 1
-
-        else:
-            new_number = 1
-
+        new_number = last_number + 1
 
         certificate_id = f"CERT2026{new_number:04d}"
 
+        # Save certificate
 
         certificate = Certificate.objects.create(
             certificate_id=certificate_id,
@@ -178,13 +180,15 @@ def generate_certificate_view(request):
             end_date=end_date
         )
 
-
         # Generate PDF
+
         pdf_path = generate_certificate_pdf(certificate)
+
         certificate.pdf_file = pdf_path.replace(
-    str(settings.MEDIA_ROOT) + "\\",
-    ""
-    )
+            str(settings.MEDIA_ROOT) + "\\",
+            ""
+        )
+
         certificate.save()
 
         messages.success(
@@ -192,15 +196,15 @@ def generate_certificate_view(request):
             f"Certificate {certificate_id} generated successfully!"
         )
 
-
         return redirect('/dashboard/')
 
-
-    # VERY IMPORTANT FOR GET REQUEST
     return render(
         request,
         "authentication/generate_certificate.html"
     )
+
+
+
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 
