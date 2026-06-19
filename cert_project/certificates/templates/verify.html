@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Certificate Verification Portal</title>
+</head>
+<body>
+
+    <h1>Certificate Verification Portal</h1>
+
+    <form action="/verify/" method="GET">
+        <input type="text" id="certificate_id"
+               placeholder="Enter Certificate ID">
+
+        <button type="button" onclick="verifyCertificate()">
+            Verify
+        </button>
+    </form>
+
+    <script>
+        function verifyCertificate() {
+            let certId =
+                document.getElementById("certificate_id").value;
+
+            window.location.href =
+                "/verify/" + certId + "/";
+        }
+    </script>
+
+</body>
+</html>
