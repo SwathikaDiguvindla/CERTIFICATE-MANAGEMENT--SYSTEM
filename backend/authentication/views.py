@@ -14,6 +14,8 @@ from .utils import generate_certificate_pdf
 from django.conf import settings
 import re
 from django.http import FileResponse
+import os
+from django.core.files import File
 
 # ── helpers ──────────────────────────────────────────────
 def is_strong_password(password):
@@ -178,23 +180,27 @@ def generate_certificate_view(request):
             end_date=end_date
         )
 
-        # Generate PDF
+       # Generate PDF
         pdf_path = generate_certificate_pdf(certificate)
 
-        # Save PDF path
-        certificate.pdf_file = pdf_path.replace(
-            str(settings.MEDIA_ROOT) + "\\",
-            ""
-        )
+# Save PDF to FileField properl
 
-        certificate.save()
+        with open(pdf_path, "rb") as f:
+            certificate.pdf_file.save(
+                os.path.basename(pdf_path),
+                File(f),
+                save=True
+            )
+            print("pdf_path =", pdf_path)
+            print("Saved name =", certificate.pdf_file.name)
+            print("Saved path =", certificate.pdf_file.path)
 
-        # Send email
+# Send email
         email_sent = send_certificate_email(
             student_name=certificate.name,
             student_email=certificate.email,
             pdf_path=pdf_path
-        )
+            )
 
         if email_sent:
             messages.success(
