@@ -3,6 +3,7 @@ import sqlite3
 import os
 import uuid
 import qrcode
+import pandas as pd
 from datetime import datetime
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
@@ -11,14 +12,18 @@ from reportlab.lib import colors
 app = Flask(__name__)
 app.secret_key = "change-this-secret-key"
 
+# ---------- CONFIG ----------
 CERT_FOLDER = "certificates"
 QR_FOLDER = "qrcodes"
+UPLOAD_FOLDER = "uploads"
 DB_PATH = "certificates.db"
 
 os.makedirs(CERT_FOLDER, exist_ok=True)
 os.makedirs(QR_FOLDER, exist_ok=True)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
+# ---------- DATABASE ----------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -57,6 +62,7 @@ def save_certificate_record(data):
     conn.close()
 
 
+# ---------- CERTIFICATE GENERATION ----------
 def generate_unique_id():
     return "CERT-" + uuid.uuid4().hex[:8].upper()
 
@@ -74,35 +80,49 @@ def generate_certificate_pdf(name, domain, start_date, end_date, unique_id, qr_p
     c = canvas.Canvas(pdf_path, pagesize=landscape(A4))
     width, height = landscape(A4)
 
+    # Border
     c.setStrokeColor(colors.HexColor("#2c3e50"))
     c.setLineWidth(4)
     c.rect(20, 20, width - 40, height - 40)
 
+    # Title
     c.setFont("Helvetica-Bold", 32)
     c.setFillColor(colors.HexColor("#2c3e50"))
     c.drawCentredString(width / 2, height - 100, "CERTIFICATE OF COMPLETION")
 
+    # Subtitle
     c.setFont("Helvetica", 16)
     c.drawCentredString(width / 2, height - 150, "This certificate is proudly presented to")
 
+    # Name
     c.setFont("Helvetica-Bold", 28)
     c.setFillColor(colors.HexColor("#e74c3c"))
     c.drawCentredString(width / 2, height - 200, name)
 
+    # Description
     c.setFont("Helvetica", 14)
     c.setFillColor(colors.black)
-    c.drawCentredString(width / 2, height - 240, f"for successfully completing the {domain} program")
-    c.drawCentredString(width / 2, height - 265, f"from {start_date} to {end_date}")
+    c.drawCentredString(
+        width / 2, height - 240,
+        f"for successfully completing the {domain} program"
+    )
+    c.drawCentredString(
+        width / 2, height - 265,
+        f"from {start_date} to {end_date}"
+    )
 
+    # Unique ID
     c.setFont("Helvetica", 10)
     c.drawString(60, 60, f"Certificate ID: {unique_id}")
 
+    # QR Code
     c.drawImage(qr_path, width - 160, 40, width=100, height=100)
 
     c.save()
     return pdf_path
 
 
+# ---------- ROUTES ----------
 @app.route('/')
 def home():
     return redirect(url_for('admin_form'))
@@ -138,6 +158,61 @@ def admin_form():
         return redirect(url_for('admin_form'))
 
     return render_template('admin_form.html')
+
+
+@app.route('/admin/bulk', methods=['GET', 'POST'])
+def bulk_upload():
+    if request.method == 'POST':
+        file = request.files.get('excel_file')
+        if not file:
+            flash("No file selected!")
+            return redirect(url_for('bulk_upload'))
+
+        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(filepath)
+
+        df = pd.read_excel(filepath)
+
+        success_count = 0
+        failed_count = 0
+        failed_rows = []
+
+        for index, row in df.iterrows():
+            try:
+                name = str(row['Name'])
+                email = str(row['Email'])
+                phone = str(row['Phone'])
+                domain = str(row['Domain'])
+                start_date = str(row['Start'])
+                end_date = str(row['End'])
+
+                unique_id = generate_unique_id()
+                qr_path = generate_qr_code(unique_id)
+                pdf_path = generate_certificate_pdf(name, domain, start_date, end_date, unique_id, qr_path)
+
+                save_certificate_record({
+                    'unique_id': unique_id,
+                    'name': name,
+                    'email': email,
+                    'phone': phone,
+                    'domain': domain,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'pdf_path': pdf_path,
+                    'qr_path': qr_path
+                })
+                success_count += 1
+            except Exception as e:
+                failed_count += 1
+                failed_rows.append(f"Row {index + 2}: {str(e)}")
+
+        flash(f"Bulk upload complete! Success: {success_count} | Failed: {failed_count}")
+        if failed_rows:
+            flash("Failed rows: " + "; ".join(failed_rows))
+
+        return redirect(url_for('bulk_upload'))
+
+    return render_template('bulk_upload.html')
 
 
 @app.route('/download/<unique_id>')
