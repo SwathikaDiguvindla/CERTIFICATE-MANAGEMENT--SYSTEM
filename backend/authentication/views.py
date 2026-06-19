@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import Certificate
 from django.utils import timezone
+from .email_service import send_certificate_email
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -136,6 +137,7 @@ def reset_password_view(request, uidb64, token):
         'token': token
     })
 # ── generate certificate ────────────────────────────────
+# ── generate certificate ────────────────────────────────
 @login_required(login_url='/login/')
 def generate_certificate_view(request):
 
@@ -149,7 +151,6 @@ def generate_certificate_view(request):
         end_date = request.POST.get("end_date")
 
         # Generate next certificate ID
-
         last_number = 0
 
         certificates = Certificate.objects.filter(
@@ -165,11 +166,9 @@ def generate_certificate_view(request):
                 pass
 
         new_number = last_number + 1
-
         certificate_id = f"CERT2026{new_number:04d}"
 
         # Save certificate
-
         certificate = Certificate.objects.create(
             certificate_id=certificate_id,
             name=name,
@@ -181,9 +180,9 @@ def generate_certificate_view(request):
         )
 
         # Generate PDF
-
         pdf_path = generate_certificate_pdf(certificate)
 
+        # Save PDF path
         certificate.pdf_file = pdf_path.replace(
             str(settings.MEDIA_ROOT) + "\\",
             ""
@@ -191,10 +190,23 @@ def generate_certificate_view(request):
 
         certificate.save()
 
-        messages.success(
-            request,
-            f"Certificate {certificate_id} generated successfully!"
+        # Send email
+        email_sent = send_certificate_email(
+            student_name=certificate.name,
+            student_email=certificate.email,
+            pdf_path=pdf_path
         )
+
+        if email_sent:
+            messages.success(
+                request,
+                f"Certificate {certificate_id} generated successfully and email sent!"
+            )
+        else:
+            messages.warning(
+                request,
+                f"Certificate {certificate_id} generated, but email could not be sent."
+            )
 
         return redirect('/dashboard/')
 
@@ -202,8 +214,6 @@ def generate_certificate_view(request):
         request,
         "authentication/generate_certificate.html"
     )
-
-
 
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
