@@ -137,7 +137,6 @@ def reset_password_view(request, uidb64, token):
         'token': token
     })
 # ── generate certificate ────────────────────────────────
-# ── generate certificate ────────────────────────────────
 @login_required(login_url='/login/')
 def generate_certificate_view(request):
 
@@ -215,7 +214,6 @@ def generate_certificate_view(request):
         "authentication/generate_certificate.html"
     )
 
-from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 
 
@@ -235,3 +233,42 @@ def download_certificate(request, certificate_id):
         )
 
     return redirect('/dashboard/')
+from django.contrib.admin.views.decorators import staff_member_required
+
+
+@staff_member_required(login_url='/login/')
+def create_admin_view(request):
+    error = None
+    success = None
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password1 = request.POST.get('password1', '')
+        password2 = request.POST.get('password2', '')
+
+        # Check username unique
+        if User.objects.filter(username=username).exists():
+            error = "Username already exists. Choose a different one."
+        elif User.objects.filter(email=email).exists():
+            error = "Email already registered."
+        elif password1 != password2:
+            error = "Passwords do not match."
+        else:
+            valid, msg = is_strong_password(password1)
+            if not valid:
+                error = msg
+            else:
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password1,
+                    is_staff=True
+                )
+                success = f"Admin account '{username}' created successfully!"
+
+    return render(request, 'authentication/create_admin.html', {
+        'error': error,
+        'success': success
+    })
+

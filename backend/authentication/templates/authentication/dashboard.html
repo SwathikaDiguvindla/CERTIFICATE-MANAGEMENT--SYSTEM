@@ -316,6 +316,7 @@ body{
 
 
 <body>
+<<<<<<< HEAD
 
 
 
@@ -624,6 +625,31 @@ No certificates generated yet
 </div>
 
 
+=======
+  <div class="sidebar">
+    <div class="logo">CV Portal <span>Admin Panel</span></div>
+    <a class="nav-item active" href="/dashboard/">🏠 Dashboard</a>
+    <a class="nav-item" href="#">📄 Generate Cert</a>
+    <a class="nav-item" href="#">📤 Bulk Upload</a>
+    <a class="nav-item" href="#">🔲 Verify Cert</a>
+    <a class="nav-item" href="/create-admin/">👤 Create Admin</a>
+    <a class="nav-item" href="/logout/" style="margin-top: 40px;">🚪 Logout</a>
+  </div>
+  <div class="main">
+    <div class="page-title">Dashboard</div>
+    <div class="page-sub">Welcome back, {{ user.username }}</div>
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num">128</div><div class="stat-label">Total Certificates</div></div>
+      <div class="stat"><div class="stat-num">12</div><div class="stat-label">Generated Today</div></div>
+      <div class="stat"><div class="stat-num">98%</div><div class="stat-label">Emails Sent</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Quick Actions</div>
+      <button class="btn">➕ New Certificate</button>
+      <button class="btn btn-green">📤 Upload Excel</button>
+    </div>
+  </div>
+>>>>>>> origin/main
 </body>
 
 </html>

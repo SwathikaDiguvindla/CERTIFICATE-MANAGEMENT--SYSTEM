@@ -8,6 +8,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('forgot-password/', views.forgot_password_view, name='forgot_password'),
     path('reset-password/<uidb64>/<token>/', views.reset_password_view, name='reset_password'),
+<<<<<<< HEAD
 
     path(
         'generate-certificate/',
@@ -24,4 +25,7 @@ path(
     views.download_certificate,
     name='download_certificate'
 ),
+=======
+    path('create-admin/', views.create_admin_view, name='create_admin'),
+>>>>>>> origin/main
 ]
