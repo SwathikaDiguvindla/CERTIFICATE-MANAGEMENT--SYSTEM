@@ -215,6 +215,37 @@ def bulk_upload():
     return render_template('bulk_upload.html')
 
 
+@app.route('/student', methods=['GET', 'POST'])
+def student_search():
+    results = []
+    searched = False
+
+    if request.method == 'POST':
+        searched = True
+        search_value = request.form['search_value'].strip()
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('''
+            SELECT unique_id, name, domain, start_date, end_date 
+            FROM certificates 
+            WHERE name LIKE ? OR email LIKE ? OR phone LIKE ?
+        ''', (f"%{search_value}%", f"%{search_value}%", f"%{search_value}%"))
+        rows = c.fetchall()
+        conn.close()
+
+        for row in rows:
+            results.append({
+                'unique_id': row[0],
+                'name': row[1],
+                'domain': row[2],
+                'start_date': row[3],
+                'end_date': row[4]
+            })
+
+    return render_template('student_search.html', results=results, searched=searched)
+
+
 @app.route('/download/<unique_id>')
 def download_certificate(unique_id):
     return send_from_directory(CERT_FOLDER, f"{unique_id}.pdf", as_attachment=True)
