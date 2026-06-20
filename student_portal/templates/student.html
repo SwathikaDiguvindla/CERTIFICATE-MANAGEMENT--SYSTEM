@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Download Portal</title>
+</head>
+<body>
+
+<h2>Certificate Download Portal</h2>
+
+<form action="/search/" method="GET">
+
+    <input
+        type="text"
+        name="keyword"
+        placeholder="Enter Name / Email / Phone">
+
+    <button type="submit">
+        Search
+    </button>
+
+</form>
+
+{% if certificate %}
+
+<hr>
+
+<h3>{{ certificate.name }}</h3>
+
+<p>Certificate ID: {{ certificate.certificate_id }}</p>
+
+<p>Domain: {{ certificate.domain_name }}</p>
+
+<a href="/download/{{ certificate.id }}/">
+    Download Certificate
+</a>
+
+{% endif %}
+
+</body>
+</html>
