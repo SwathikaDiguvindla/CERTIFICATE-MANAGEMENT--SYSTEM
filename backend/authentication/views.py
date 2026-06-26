@@ -13,6 +13,7 @@ from .utils import generate_certificate_pdf
 from django.conf import settings
 import re
 from django.http import FileResponse
+from datetime import datetime
 
 # ── helpers ──────────────────────────────────────────────
 def is_strong_password(password):
@@ -145,8 +146,15 @@ def generate_certificate_view(request):
         phone = request.POST.get("phone")
         email = request.POST.get("email")
         domain = request.POST.get("domain")
-        start_date = request.POST.get("start_date")
-        end_date = request.POST.get("end_date")
+        start_date = datetime.strptime(
+            request.POST.get("start_date"),
+            "%Y-%m-%d"
+            ).date()
+
+        end_date = datetime.strptime(
+            request.POST.get("end_date"),
+            "%Y-%m-%d"
+            ).date()
 
         # Generate next certificate ID
 
