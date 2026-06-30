@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Certificate Verification</title>
+
+    <style>
+        body{
+            font-family:Arial,sans-serif;
+            background:#f4f6f9;
+        }
+
+        .container{
+            width:700px;
+            margin:50px auto;
+        }
+
+        .card{
+            background:white;
+            padding:30px;
+            border-radius:12px;
+            box-shadow:0 5px 20px rgba(0,0,0,.15);
+        }
+
+        h2{
+            text-align:center;
+            color:#1a3a5c;
+        }
+
+        input{
+            width:100%;
+            padding:12px;
+            margin:15px 0;
+            border:1px solid #ccc;
+            border-radius:6px;
+        }
+
+        button{
+            width:100%;
+            padding:12px;
+            background:#2980b9;
+            color:white;
+            border:none;
+            border-radius:6px;
+            cursor:pointer;
+        }
+
+        .success{
+            margin-top:30px;
+            border-left:6px solid green;
+            background:#f0fff4;
+            padding:20px;
+        }
+
+        .error{
+            margin-top:30px;
+            border-left:6px solid red;
+            background:#fff5f5;
+            padding:20px;
+        }
+
+        table{
+            width:100%;
+            margin-top:15px;
+        }
+
+        td{
+            padding:10px;
+            border-bottom:1px solid #eee;
+        }
+
+        .valid{
+            color:green;
+            font-weight:bold;
+        }
+
+        .footer{
+            text-align:center;
+            margin-top:20px;
+            color:#666;
+            font-size:13px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h2>Certificate Verification</h2>
+
+<form method="POST">
+{% csrf_token %}
+
+<input
+type="text"
+name="certificate_id"
+placeholder="Enter Certificate ID"
+required>
+
+<button>Verify Certificate</button>
+
+</form>
+
+{% if certificate %}
+
+<div class="success">
+
+<h3>✅ Certificate Verified Successfully</h3>
+
+<table>
+
+<tr>
+<td><b>Certificate ID</b></td>
+<td>{{certificate.certificate_id}}</td>
+</tr>
+
+<tr>
+<td><b>Student Name</b></td>
+<td>{{certificate.name}}</td>
+</tr>
+
+<tr>
+<td><b>Email</b></td>
+<td>{{certificate.email}}</td>
+</tr>
+
+<tr>
+<td><b>Domain</b></td>
+<td>{{certificate.domain}}</td>
+</tr>
+
+<tr>
+<td><b>Status</b></td>
+<td class="valid">VALID ✓</td>
+</tr>
+
+</table>
+
+<div class="footer">
+This certificate is verified and exists in the CV Portal database.
+</div>
+
+</div>
+
+{% endif %}
+
+{% if message %}
+
+<div class="error">
+
+<h3>❌ Certificate Not Found</h3>
+
+<p>{{message}}</p>
+
+</div>
+
+{% endif %}
+
+</div>
+
+</div>
+
+</body>
+</html>

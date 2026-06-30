@@ -1,276 +1,128 @@
 import os
 import qrcode
-
+from datetime import datetime
 from django.conf import settings
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.pdfgen import canvas
 
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4, landscape  # Added landscape
+from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from django.urls import path
+from . import views
 
 def generate_certificate_pdf(certificate):
 
-    certificate_dir = os.path.join(
-        settings.MEDIA_ROOT,
-        "certificates"
-    )
-
+    # ==========================================
+    # Create certificates folder
+    # ==========================================
+    certificate_dir = os.path.join(settings.MEDIA_ROOT, "certificates")
     os.makedirs(certificate_dir, exist_ok=True)
 
-    pdf_path = os.path.join(
-        certificate_dir,
-        f"{certificate.certificate_id}.pdf"
+    pdf_path = os.path.join(certificate_dir, f"{certificate.certificate_id}.pdf")
+
+    # ==========================================
+    # Safe Date Parsing (Fixes the AttributeError)
+    # ==========================================
+    # Convert string dates from the form into datetime objects safely
+    if isinstance(certificate.start_date, str):
+        start_date_obj = datetime.strptime(certificate.start_date, '%Y-%m-%d')
+    else:
+        start_date_obj = certificate.start_date
+
+    if isinstance(certificate.end_date, str):
+        end_date_obj = datetime.strptime(certificate.end_date, '%Y-%m-%d')
+    else:
+        end_date_obj = certificate.end_date
+
+    # ==========================================
+    # Create Landscape PDF (Matches professional certificate layouts)
+    # ==========================================
+    c = canvas.Canvas(pdf_path, pagesize=landscape(A4))
+    width, height = landscape(A4) # width is now ~841, height is ~595
+
+    # ==========================================
+    # Background Image
+    # ==========================================
+    bg_path = os.path.join(
+        settings.BASE_DIR, "authentication", "static", "images", "certificate_bg.png"
     )
-
-    c = canvas.Canvas(
-        pdf_path,
-        pagesize=landscape(A4)
-    )
-
-    width, height = landscape(A4)
+    c.drawImage(ImageReader(bg_path), 0, 0, width=width, height=height)
 
     # ==========================================
-    # BACKGROUND
+    # Today's Date
     # ==========================================
-
-    c.setFillColor(colors.whitesmoke)
-    c.rect(0, 0, width, height, fill=1)
-
-    # ==========================================
-    # BORDERS
-    # ==========================================
-
-    c.setStrokeColor(colors.HexColor("#C9A227"))
-    c.setLineWidth(5)
-    c.rect(
-        20,
-        20,
-        width - 40,
-        height - 40
-    )
-
-    c.setStrokeColor(colors.HexColor("#0A2342"))
-    c.setLineWidth(2)
-
-    c.rect(
-        35,
-        35,
-        width - 70,
-        height - 70
-    )
-
-    # ==========================================
-    # HEADER
-    # ==========================================
-
-    c.setFillColor(colors.HexColor("#0A2342"))
-    c.setFont("Times-Bold", 28)
-
-    c.drawCentredString(
-        width / 2,
-        height - 80,
-        "CV PORTAL"
-    )
-
-    c.setFillColor(colors.HexColor("#C9A227"))
-    c.setFont("Times-Roman", 16)
-
-    c.drawCentredString(
-        width / 2,
-        height - 110,
-        "CERTIFICATE MANAGEMENT SYSTEM"
-    )
-
-    c.line(
-        270,
-        height - 120,
-        width - 270,
-        height - 120
-    )
-
-    # ==========================================
-    # TITLE
-    # ==========================================
-
-    c.setFillColor(colors.HexColor("#0A2342"))
-    c.setFont("Times-Bold", 34)
-
-    c.drawCentredString(
-        width / 2,
-        height - 180,
-        "CERTIFICATE OF COMPLETION"
-    )
-
-    # ==========================================
-    # PRESENTED TO
-    # ==========================================
-
+    today = datetime.today().strftime("%B %d, %Y")
     c.setFillColor(colors.black)
-    c.setFont("Times-Roman", 18)
-
-    c.drawCentredString(
-        width / 2,
-        height - 240,
-        "This certificate is proudly presented to"
-    )
-
-    # ==========================================
-    # NAME
-    # ==========================================
-
-    # Student Name
-    c.setFillColor(colors.HexColor("#C99700"))
-    c.setFont("Times-Bold", 32)
-
-    c.drawCentredString(
-    width / 2,
-    height - 280,
-    certificate.name
-)
-
-# Line under name
-    c.setStrokeColor(colors.HexColor("#C99700"))
-    c.line(
-    250,
-    height - 300,
-    width - 250,
-    height - 300
-)
-
-# Description
-    c.setFillColor(colors.black)
-    c.setFont("Times-Roman", 18)
-
-    c.drawCentredString(
-    width / 2,
-    height - 360,
-    "For successfully completing the internship program in"
-)
-
-# Domain Name (Moved lower)
-    c.setFillColor(colors.HexColor("#1E5A88"))
-    c.setFont("Times-Bold", 22)
-
-    c.drawCentredString(
-    width / 2,
-    height - 400,
-    certificate.domain.title()
-)
+    c.setFont("Times-BoldItalic", 12)
     
+    # Repositioned for landscape layout
+    c.drawRightString(width - 80, height - 100, today)
 
     # ==========================================
-    # DURATION
+    # Paragraph Style
     # ==========================================
-
-    c.setFillColor(colors.black)
-    c.setFont("Times-Roman", 16)
-
-    c.drawCentredString(
-    width / 2,
-    135,
-    f"Duration : {certificate.start_date} to {certificate.end_date}"
-)
+    styles = getSampleStyleSheet()
+    style = styles["Normal"]
+    style.fontName = "Times-Roman"
+    style.fontSize = 16
+    style.leading = 28
+    style.alignment = 1  # 1 changes text alignment to CENTERED
 
     # ==========================================
-    # CERTIFICATE ID
+    # Certificate Content
     # ==========================================
+    content = f"""
+    This is to certify that <b>{certificate.name}</b> has successfully completed
+    the internship at <u>Conzura Soft Solutions</u> from
+    <b>{start_date_obj.strftime('%d %B %Y')}</b> to
+    <b>{end_date_obj.strftime('%d %B %Y')}</b>.
+    <br/><br/>
+    During the internship period, the intern worked with dedication,
+    sincerity and professionalism. The intern actively participated
+    in assigned tasks and demonstrated good learning ability,
+    teamwork and technical understanding throughout the internship
+    program in <b>{certificate.domain}</b>.
+    <br/><br/>
+    We appreciate the intern's efforts and contribution to the organization
+    during the internship tenure. We wish them success in all future
+    academic and professional endeavors.
+    """
 
-    c.setFont("Times-Bold", 14)
-
-    c.drawCentredString(
-    width / 2,
-    95,
-    f"Certificate ID : {certificate.certificate_id}"
-)
-
-    # ==========================================
-    # LEFT SIGNATURE
-    # ==========================================
-
-    c.setStrokeColor(colors.HexColor("#0A2342"))
-    c.setLineWidth(1.5)
-
-
-
-    c.setFont("Times-Bold", 12)
-
-    c.line(
-    130,
-    75,
-    280,
-    75
-)
-    c.drawCentredString(
-    205,
-    55,
-    "AUTHORIZED SIGNATORY"
-)
+    paragraph = Paragraph(content, style)
+    
+    # Wrapped to fit nicely in a landscape container width
+    paragraph.wrapOn(c, 650, 300)
+    # X=96 centers the 650-wide block perfectly on the 841-wide canvas
+    paragraph.drawOn(c, 96, 180) 
 
     # ==========================================
-    # RIGHT SIGNATURE
+    # Certificate ID
     # ==========================================
-
-    c.line(
-    width - 180,
-    75,
-    width - 280,
-    75
-)
-
-    c.drawCentredString(
-    width - 205,
-    55,
-    "DIRECTOR"
-)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(80, 50, f"Certificate ID : {certificate.certificate_id}")
 
     # ==========================================
-    # QR CODE
+    # QR Code
     # ==========================================
-    qr_data = (
-        f"Certificate ID: {certificate.certificate_id}\n"
-        f"Name: {certificate.name}\n"
-        f"Domain: {certificate.domain}"
-    )
+    qr_data = f"""Certificate ID : {certificate.certificate_id}
+Name : {certificate.name}
+Email : {certificate.email}
+Phone : {certificate.phone}
+Domain : {certificate.domain}
+Duration : {start_date_obj.strftime('%Y-%m-%d')} to {end_date_obj.strftime('%Y-%m-%d')}"""
 
     qr = qrcode.make(qr_data)
-
-    qr_path = os.path.join(
-        certificate_dir,
-        f"{certificate.certificate_id}_qr.png"
-    )
-
+    qr_path = os.path.join(certificate_dir, f"{certificate.certificate_id}_qr.png")
     qr.save(qr_path)
 
-    c.drawImage(
-    qr_path,
-    width - 140,
-    35,
-    width=65,
-    height=65
-)
+    # Placed on the bottom right side of the landscape canvas
+    c.drawImage(qr_path, width - 130, 35, width=70, height=70)
 
     # ==========================================
-    # FOOTER
+    # Save PDF
     # ==========================================
-
-    c.setFillColor(colors.HexColor("#0A2342"))
-
-    c.rect(
-        0,
-        0,
-        width,
-        30,
-        fill=1
-    )
-
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica", 10)
-
-    c.drawCentredString(
-        width / 2,
-        10,
-        "CV Portal • Certificate Management System • 2026"
-    )
-
     c.save()
-
     return pdf_path
+    

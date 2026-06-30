@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CV Portal - Bulk Upload</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { display: flex; min-height: 100vh; background: #f4f6f9; }
+    .sidebar { display: flex; flex-direction: column; width: 200px; background: #1a3a5c; min-height: 100vh; padding: 20px 0; }
+    .logo { color: white; font-size: 15px; font-weight: 500; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); }
+    .logo span { font-size: 11px; color: rgba(255,255,255,0.6); display: block; margin-top: 2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,0.75); font-size: 13px; cursor: pointer; text-decoration: none; }
+    .nav-item.active { background: #2980b9; color: white; border-left: 3px solid #5dade2; }
+    .main { flex: 1; padding: 24px; }
+    .page-title { font-size: 20px; font-weight: 500; color: #1a3a5c; margin-bottom: 4px; }
+    .page-sub { font-size: 13px; color: #888; margin-bottom: 24px; }
+    .card { background: white; border-radius: 8px; padding: 20px; border: 1px solid #e0e0e0; max-width: 600px; }
+    .alert { padding: 12px; margin-bottom: 20px; border-radius: 6px; font-size: 13px; background: #e8f4fd; color: #1a3a5c; border: 1px solid #d0e7fb; }
+    .btn-green { background: #17a589; color: white; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; text-decoration: none; }
+    input[type="file"] { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 10px 12px; font-size: 13px; margin-top: 8px; margin-bottom: 16px; display: block; }
+    label { font-size: 12px; color: #555; display: block; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="logo">CV Portal <span>Admin Panel</span></div>
+    <a class="nav-item" href="{% url 'dashboard' %}">🏠 Dashboard</a>
+    <a class="nav-item" href="{% url 'generate_certificate' %}">📄 Generate Cert</a>
+    <a class="nav-item active" href="{% url 'bulk_upload' %}">📤 Bulk Upload</a>
+    <a class="nav-item" href="#">🔲 Verify Cert</a>
+    <a class="nav-item" href="{% url 'logout' %}" style="margin-top: auto;">🚪 Logout</a>
+  </div>
+  <div class="main">
+    <div class="page-title">Bulk Certificate Upload</div>
+    <div class="page-sub">Upload an Excel spreadsheet file to process data in bulk</div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label>Select Excel File (.xlsx)</label>
+            <input type="file" name="excel_file" accept=".xlsx" required />
+            <button type="submit" class="btn-green">📤 Start Processing</button>
+        </form>
+    </div>
+  </div>
+</body>
+</html>
